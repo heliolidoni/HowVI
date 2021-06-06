@@ -16,6 +16,7 @@ namespace HowVI.Controllers
             _vendedorRepository = vendedorRepository;
         }
 
+        [HttpPost("Login")]
         public ActionResult<dynamic> Login([FromBody] LoginRequest loginRequest)
         {
             try
