@@ -1,4 +1,5 @@
 using Entities.Contracts;
+using HowVI.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,7 @@ namespace HowVI
             services.AddScoped<IStatusRepository, StatusRepository>();
             services.AddScoped<ITipoContatoRepository, TipoContatoRepository>();
             services.AddScoped<IVendedorRepository, VendedorRepository>();
+            services.AddScoped<IService, Service>();
 
             services.AddCors();
             
@@ -41,7 +43,7 @@ namespace HowVI
             services.AddSwaggerGen();
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IService service)
         {
             if (env.IsDevelopment())
             {
@@ -55,6 +57,8 @@ namespace HowVI
                 endpoints.MapControllers();
             });
 
+            service.InicializaBanco();
+
             app.UseSwagger();
 
             app.UseSwaggerUI(c =>
@@ -65,4 +69,5 @@ namespace HowVI
         }
     }
 }
+
 
