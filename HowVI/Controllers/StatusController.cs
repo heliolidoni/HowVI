@@ -1,5 +1,6 @@
 ﻿using Entities.Contracts;
 using Entities.Entities;
+using HowVI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 
@@ -9,15 +10,22 @@ namespace Controllers.HowVI
     public class StatusController : Controller
     {
         private readonly IStatusRepository _statusRepository;
+        private readonly IService _service;
 
-        public StatusController(IStatusRepository statusRepository)
+        public StatusController(IStatusRepository statusRepository, IService service)
         {
+            _service = service;
             _statusRepository = statusRepository;
         }
 
         [HttpDelete]
-        public ActionResult<dynamic> Delete([FromBody] Status status)
+        public ActionResult<dynamic> Delete([FromHeader] string token, [FromBody] Status status)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (status != null && status.Id > 0)
@@ -30,17 +38,24 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpPut]
-        public ActionResult<dynamic> Put([FromBody] Status status)
+        public ActionResult<dynamic> Put([FromHeader] string token, [FromBody] Status status)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (status != null && status.Id > 0)
                 {
+                    status.DataAlteracao = DateTime.Now;
+                    status.UsuarioAlteracao = _service.ObterUsuarioPorToken(token);
                     status = _statusRepository.Atualizar(status);
                     return status;
                 }
@@ -49,17 +64,26 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpPost]
-        public ActionResult<dynamic> Post([FromBody] Status status)
+        public ActionResult<dynamic> Post([FromHeader] string token, [FromBody] Status status)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (status != null)
                 {
+                    status.DataAlteracao = DateTime.Now;
+                    status.UsuarioAlteracao = _service.ObterUsuarioPorToken(token);
+                    status.DataCriacao = DateTime.Now;
+                    status.UsuarioCriacao = status.UsuarioAlteracao;
                     status = _statusRepository.Adicionar(status);
                     if (status.Id > 0)
                     {
@@ -71,13 +95,18 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpGet("{Id}")]
-        public ActionResult<dynamic> Get(int Id)
+        public ActionResult<dynamic> Get([FromHeader] string token, int Id)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (Id > 0)
@@ -93,13 +122,18 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpGet]
-        public object Get()
+        public object Get([FromHeader] string token)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 var status = _statusRepository.ObterTodos();
@@ -112,7 +146,7 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using Entities.Contracts;
 using Entities.Entities;
+using HowVI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 
@@ -9,15 +10,22 @@ namespace Controllers.HowVI
     public class EnderecoController : Controller
     {
         private readonly IEnderecoRepository _enderecoRepository;
+        private readonly IService _service;
 
-        public EnderecoController(IEnderecoRepository enderecoRepository)
+        public EnderecoController(IEnderecoRepository enderecoRepository, IService service)
         {
+            _service = service;
             _enderecoRepository = enderecoRepository;
         }
 
         [HttpDelete]
-        public ActionResult<dynamic> Delete([FromBody] Endereco endereco)
+        public ActionResult<dynamic> Delete([FromHeader] string token, [FromBody] Endereco endereco)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (endereco != null && endereco.Id > 0)
@@ -30,17 +38,24 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpPut]
-        public ActionResult<dynamic> Put([FromBody] Endereco endereco)
+        public ActionResult<dynamic> Put([FromHeader] string token, [FromBody] Endereco endereco)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (endereco != null && endereco.Id > 0)
                 {
+                    endereco.DataAlteracao = DateTime.Now;
+                    endereco.UsuarioAlteracao = _service.ObterUsuarioPorToken(token);
                     endereco = _enderecoRepository.Atualizar(endereco);
                     return endereco;
                 }
@@ -49,17 +64,26 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpPost]
-        public ActionResult<dynamic> Post([FromBody] Endereco endereco)
+        public ActionResult<dynamic> Post([FromHeader] string token, [FromBody] Endereco endereco)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (endereco != null)
                 {
+                    endereco.DataAlteracao = DateTime.Now;
+                    endereco.UsuarioAlteracao = _service.ObterUsuarioPorToken(token);
+                    endereco.DataCriacao = DateTime.Now;
+                    endereco.UsuarioCriacao = endereco.UsuarioAlteracao;
                     endereco = _enderecoRepository.Adicionar(endereco);
                     if (endereco.Id > 0)
                     {
@@ -71,13 +95,18 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpGet("{Id}")]
-        public ActionResult<dynamic> Get(int Id)
+        public ActionResult<dynamic> Get([FromHeader] string token, int Id)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (Id > 0)
@@ -93,13 +122,18 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpGet]
-        public object Get()
+        public object Get([FromHeader] string token)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 var endereco = _enderecoRepository.ObterTodos();
@@ -112,7 +146,7 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
     }

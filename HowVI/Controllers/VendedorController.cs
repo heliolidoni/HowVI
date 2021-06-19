@@ -1,8 +1,10 @@
 ﻿using Entities.Contracts;
 using Entities.Entities;
 using HowVI.Arguments;
+using HowVI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Linq;
 
 namespace HowVI.Controllers
 {
@@ -10,9 +12,12 @@ namespace HowVI.Controllers
     public class VendedorController : Controller
     {
         private readonly IVendedorRepository _vendedorRepository;
+        private readonly IService _service;
+        private static readonly Random random = new Random();
 
-        public VendedorController(IVendedorRepository vendedorRepository)
+        public VendedorController(IVendedorRepository vendedorRepository, IService service)
         {
+            _service = service;
             _vendedorRepository = vendedorRepository;
         }
 
@@ -23,13 +28,18 @@ namespace HowVI.Controllers
             {
                 var vendedor = _vendedorRepository.ObterPorLogin(loginRequest.Login);
 
-                if (vendedor.Senha.Equals(loginRequest.Senha))
+                if ((vendedor != null) && (vendedor.Senha.Equals(loginRequest.Senha)))
                 {
+                    vendedor.TokenAccess = new string(Enumerable.Repeat("ABCDEFGHIJKLMNOPQRSTUVWYZabcdefghijklmnopkrstuvwyz1234567890", 24)
+                                                .Select(s => s[random.Next(s.Length)]).ToArray());
+
+                    vendedor = _vendedorRepository.Atualizar(vendedor);
+
                     return new LoginResponse()
                     {
                         IsAutenticado = true,
                         Validade = DateTime.Now.AddHours(2),
-                        Token = "AUTENTICADO"
+                        Token = vendedor.TokenAccess
                     };
                 }
 
@@ -42,8 +52,13 @@ namespace HowVI.Controllers
         }
 
         [HttpDelete]
-        public ActionResult<dynamic> Delete([FromBody] Vendedor vendedor)
+        public ActionResult<dynamic> Delete([FromHeader] string token ,[FromBody] Vendedor vendedor)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+            
             try
             {
                 if (vendedor != null && vendedor.Id > 0)
@@ -56,17 +71,25 @@ namespace HowVI.Controllers
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpPut]
-        public ActionResult<dynamic> Put([FromBody] Vendedor vendedor)
+        public ActionResult<dynamic> Put([FromHeader] string token, [FromBody] Vendedor vendedor)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (vendedor != null && vendedor.Id > 0)
                 {
+                    vendedor.DataAlteracao = DateTime.Now;
+                    vendedor.UsuarioAlteracao = _service.ObterUsuarioPorToken(token);
+
                     vendedor = _vendedorRepository.Atualizar(vendedor);
                     return vendedor;
                 }
@@ -75,17 +98,27 @@ namespace HowVI.Controllers
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpPost]
-        public ActionResult<dynamic> Post([FromBody] Vendedor vendedor)
+        public ActionResult<dynamic> Post([FromHeader] string token, [FromBody] Vendedor vendedor)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (vendedor != null)
                 {
+                    vendedor.DataAlteracao = DateTime.Now;
+                    vendedor.UsuarioAlteracao = _service.ObterUsuarioPorToken(token);
+                    vendedor.DataCriacao = DateTime.Now;
+                    vendedor.UsuarioCriacao = vendedor.UsuarioAlteracao;
+
                     vendedor = _vendedorRepository.Adicionar(vendedor);
                     if (vendedor.Id > 0)
                     {
@@ -97,13 +130,18 @@ namespace HowVI.Controllers
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpGet("{Id}")]
-        public ActionResult<dynamic> Get(int Id)
+        public ActionResult<dynamic> Get([FromHeader] string token, int Id)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (Id > 0)
@@ -119,13 +157,18 @@ namespace HowVI.Controllers
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpGet]
-        public object Get()
+        public object Get([FromHeader] string token)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 var vendedor = _vendedorRepository.ObterTodos();
@@ -138,7 +181,7 @@ namespace HowVI.Controllers
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
     }

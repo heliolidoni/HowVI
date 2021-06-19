@@ -1,5 +1,6 @@
 ﻿using Entities.Contracts;
 using Entities.Entities;
+using HowVI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 
@@ -9,15 +10,22 @@ namespace Controllers.HowVI
     public class AtividadeController : Controller
     {
         private readonly IAtividadeRepository _atividadeRepository;
+        private readonly IService _service;
 
-        public AtividadeController(IAtividadeRepository atividadeRepository)
+        public AtividadeController(IAtividadeRepository atividadeRepository, IService service)
         {
+            _service = service;
             _atividadeRepository = atividadeRepository;
         }
 
         [HttpDelete]
-        public ActionResult<dynamic> Delete([FromBody] Atividade atividade)
+        public ActionResult<dynamic> Delete([FromHeader] string token, [FromBody] Atividade atividade)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (atividade != null && atividade.Id > 0)
@@ -30,17 +38,24 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpPut]
-        public ActionResult<dynamic> Put([FromBody] Atividade atividade)
+        public ActionResult<dynamic> Put([FromHeader] string token, [FromBody] Atividade atividade)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (atividade != null && atividade.Id > 0)
                 {
+                    atividade.DataAlteracao = DateTime.Now;
+                    atividade.UsuarioAlteracao = _service.ObterUsuarioPorToken(token);
                     atividade = _atividadeRepository.Atualizar(atividade);
                     return atividade;
                 }
@@ -49,17 +64,26 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpPost]
-        public ActionResult<dynamic> Post([FromBody] Atividade atividade)
+        public ActionResult<dynamic> Post([FromHeader] string token, [FromBody] Atividade atividade)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (atividade != null)
                 {
+                    atividade.DataAlteracao = DateTime.Now;
+                    atividade.UsuarioAlteracao = _service.ObterUsuarioPorToken(token);
+                    atividade.DataCriacao = DateTime.Now;
+                    atividade.UsuarioCriacao = atividade.UsuarioAlteracao;
                     atividade = _atividadeRepository.Adicionar(atividade);
                     if (atividade.Id > 0)
                     {
@@ -71,13 +95,18 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpGet("{Id}")]
-        public ActionResult<dynamic> Get(int Id)
+        public ActionResult<dynamic> Get([FromHeader] string token, int Id)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (Id > 0)
@@ -93,13 +122,18 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpGet]
-        public object Get()
+        public object Get([FromHeader] string token)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 var atividade = _atividadeRepository.ObterTodos();
@@ -112,7 +146,7 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
     }

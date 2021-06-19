@@ -24,7 +24,7 @@ namespace HowVI
         {
             var connectionString = Context.Conector();
 
-            services.AddDbContext<Context>(option => option.UseInMemoryDatabase("HowVI"));
+            services.AddDbContext<Context>(option => option.UseInMemoryDatabase(connectionString));
 
             services.AddScoped<IAtividadeRepository, AtividadeRepository>();
             services.AddScoped<IClienteRepository, ClienteRepository>();
@@ -57,9 +57,9 @@ namespace HowVI
                 endpoints.MapControllers();
             });
 
-            service.InicializaBanco();
-
             app.UseSwagger();
+
+            service.InicializaBanco();
 
             app.UseSwaggerUI(c =>
             {

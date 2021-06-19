@@ -1,5 +1,6 @@
 ﻿using Entities.Contracts;
 using Entities.Entities;
+using HowVI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 
@@ -9,15 +10,22 @@ namespace Controllers.HowVI
     public class ContatoClienteController : Controller
     {
         private readonly IContatoClienteRepository _contatoClienteRepository;
+        private readonly IService _service;
 
-        public ContatoClienteController(IContatoClienteRepository contatoClienteRepository)
+        public ContatoClienteController(IContatoClienteRepository contatoClienteRepository, IService service)
         {
+            _service = service;
             _contatoClienteRepository = contatoClienteRepository;
         }
 
         [HttpDelete]
-        public ActionResult<dynamic> Delete([FromBody] ContatoCliente contatoCliente)
+        public ActionResult<dynamic> Delete([FromHeader] string token, [FromBody] ContatoCliente contatoCliente)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (contatoCliente != null && contatoCliente.Id > 0)
@@ -30,17 +38,24 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpPut]
-        public ActionResult<dynamic> Put([FromBody] ContatoCliente contatoCliente)
+        public ActionResult<dynamic> Put([FromHeader] string token, [FromBody] ContatoCliente contatoCliente)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (contatoCliente != null && contatoCliente.Id > 0)
                 {
+                    contatoCliente.DataAlteracao = DateTime.Now;
+                    contatoCliente.UsuarioAlteracao = _service.ObterUsuarioPorToken(token);
                     contatoCliente = _contatoClienteRepository.Atualizar(contatoCliente);
                     return contatoCliente;
                 }
@@ -49,17 +64,26 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpPost]
-        public ActionResult<dynamic> Post([FromBody] ContatoCliente contatoCliente)
+        public ActionResult<dynamic> Post([FromHeader] string token, [FromBody] ContatoCliente contatoCliente)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (contatoCliente != null)
                 {
+                    contatoCliente.DataAlteracao = DateTime.Now;
+                    contatoCliente.UsuarioAlteracao = _service.ObterUsuarioPorToken(token);
+                    contatoCliente.DataCriacao = DateTime.Now;
+                    contatoCliente.UsuarioCriacao = contatoCliente.UsuarioAlteracao;
                     contatoCliente = _contatoClienteRepository.Adicionar(contatoCliente);
                     if (contatoCliente.Id > 0)
                     {
@@ -71,13 +95,18 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpGet("{Id}")]
-        public ActionResult<dynamic> Get(int Id)
+        public ActionResult<dynamic> Get([FromHeader] string token, int Id)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (Id > 0)
@@ -93,13 +122,18 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpGet]
-        public object Get()
+        public object Get([FromHeader] string token)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 var contatoCliente = _contatoClienteRepository.ObterTodos();
@@ -112,7 +146,7 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
     }

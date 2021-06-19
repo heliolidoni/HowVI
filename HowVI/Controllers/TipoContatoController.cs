@@ -1,5 +1,6 @@
 ﻿using Entities.Contracts;
 using Entities.Entities;
+using HowVI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 
@@ -9,15 +10,22 @@ namespace Controllers.HowVI
     public class TipoContatoController : Controller
     {
         private readonly ITipoContatoRepository _tipoContatoRepository;
+        private readonly IService _service;
 
-        public TipoContatoController(ITipoContatoRepository tipoContatoRepository)
+        public TipoContatoController(ITipoContatoRepository tipoContatoRepository, IService service)
         {
+            _service = service;
             _tipoContatoRepository = tipoContatoRepository;
         }
 
         [HttpDelete]
-        public ActionResult<dynamic> Delete([FromBody] TipoContato tipoContato)
+        public ActionResult<dynamic> Delete([FromHeader] string token, [FromBody] TipoContato tipoContato)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (tipoContato != null && tipoContato.Id > 0)
@@ -30,17 +38,24 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpPut]
-        public ActionResult<dynamic> Put([FromBody] TipoContato tipoContato)
+        public ActionResult<dynamic> Put([FromHeader] string token, [FromBody] TipoContato tipoContato)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (tipoContato != null && tipoContato.Id > 0)
                 {
+                    tipoContato.DataAlteracao = DateTime.Now;
+                    tipoContato.UsuarioAlteracao = _service.ObterUsuarioPorToken(token);
                     tipoContato = _tipoContatoRepository.Atualizar(tipoContato);
                     return tipoContato;
                 }
@@ -49,18 +64,29 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpPost]
-        public ActionResult<dynamic> Post([FromBody] TipoContato tipoContato)
+        public ActionResult<dynamic> Post([FromHeader] string token, [FromBody] TipoContato tipoContato)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (tipoContato != null)
                 {
+                    tipoContato.DataAlteracao = DateTime.Now;
+                    tipoContato.UsuarioAlteracao = _service.ObterUsuarioPorToken(token);
+                    tipoContato.DataCriacao = DateTime.Now;
+                    tipoContato.UsuarioCriacao = tipoContato.UsuarioAlteracao;
+
                     tipoContato = _tipoContatoRepository.Adicionar(tipoContato);
+
                     if (tipoContato.Id > 0)
                     {
                         return tipoContato;
@@ -71,13 +97,18 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpGet("{Id}")]
-        public ActionResult<dynamic> Get(int Id)
+        public ActionResult<dynamic> Get([FromHeader] string token, int Id)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (Id > 0)
@@ -93,13 +124,18 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpGet]
-        public object Get()
+        public object Get([FromHeader] string token)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 var tipoContato = _tipoContatoRepository.ObterTodos();
@@ -112,7 +148,7 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
     }

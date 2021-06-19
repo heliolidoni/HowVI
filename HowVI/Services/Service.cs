@@ -1,9 +1,7 @@
 ﻿using Entities.Contracts;
 using Entities.Entities;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace HowVI.Services
 {
@@ -37,6 +35,39 @@ namespace HowVI.Services
             _statusRepository = statusRepository;
             _tipoContatoRepository = tipoContatoRepository;
             _vendedorRepository = vendedorRepository;
+        }
+
+        public int ObterUsuarioPorToken(string token)
+        {
+            var ret = _vendedorRepository.ObterTodos()?.FirstOrDefault(v => v.TokenAccess.Equals(token));
+            if (ret != null)
+            {
+                return ret.Id;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        //Validação de acesso por token simples, para uma aplicação real, deve se usar um identity server ou algo similar.
+        public bool Autorizado(string token)
+        {
+            var usuario = _vendedorRepository.ObterTodos();
+
+            if (usuario == null)
+            {
+                return false;
+            }
+
+            if (usuario.Where(v => v.TokenAccess.Equals(token)) != null)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public void InicializaBanco()
@@ -142,13 +173,13 @@ namespace HowVI.Services
             //Inicializa Empresa
             _empresaRepository.Adicionar(new Empresa()
             {
-                Nome = "Empresa Teste", 
-                RazaoSocial = "Teste HoW VI", 
-                CNPJ = "111.1111/0001-00", 
-                Telefone = "(47) 9 96699-1588", 
-                Email = "teste@teste.com.br", 
-                IsAtivo = true, 
-                IdEndereco = 1, 
+                Nome = "Empresa Teste",
+                RazaoSocial = "Teste HoW VI",
+                CNPJ = "111.1111/0001-00",
+                Telefone = "(47) 9 96699-1588",
+                Email = "teste@teste.com.br",
+                IsAtivo = true,
+                IdEndereco = 1,
                 WebSite = "www.teste.com.br",
                 DataAlteracao = DateTime.Now,
                 DataCriacao = DateTime.Now,
@@ -246,14 +277,14 @@ namespace HowVI.Services
             });
 
             //Inicializa Atividades
-            _atividadeRepository.Adicionar(new Atividade() 
+            _atividadeRepository.Adicionar(new Atividade()
             {
                 Nome = "teste",
                 DescricaoContato = "Este é um contato de testes do projeto do curso ADS da Univali",
-                IdCliente = 1, 
-                IsAtivo = true, 
-                IdStatus = 2, 
-                IdVendedor = 1, 
+                IdCliente = 1,
+                IsAtivo = true,
+                IdStatus = 2,
+                IdVendedor = 1,
                 DataContato = DateTime.Now,
                 DataProximoContato = DateTime.Now,
                 DataRetorno = DateTime.Now,
@@ -267,8 +298,11 @@ namespace HowVI.Services
         }
     }
 
+
     public interface IService
     {
+        public bool Autorizado(string token);
+        public int ObterUsuarioPorToken(string token);
         public void InicializaBanco();
     }
 }

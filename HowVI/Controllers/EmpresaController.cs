@@ -1,5 +1,6 @@
 ﻿using Entities.Contracts;
 using Entities.Entities;
+using HowVI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 
@@ -9,15 +10,22 @@ namespace Controllers.HowVI
     public class EmpresaController : Controller
     {
         private readonly IEmpresaRepository _empresaRepository;
+        private readonly IService _service;
 
-        public EmpresaController(IEmpresaRepository empresaRepository)
+        public EmpresaController(IEmpresaRepository empresaRepository, IService service)
         {
+            _service = service;
             _empresaRepository = empresaRepository;
         }
 
         [HttpDelete]
-        public ActionResult<dynamic> Delete([FromBody] Empresa empresa)
+        public ActionResult<dynamic> Delete([FromHeader] string token, [FromBody] Empresa empresa)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (empresa != null && empresa.Id > 0)
@@ -30,17 +38,24 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpPut]
-        public ActionResult<dynamic> Put([FromBody] Empresa empresa)
+        public ActionResult<dynamic> Put([FromHeader] string token, [FromBody] Empresa empresa)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (empresa != null && empresa.Id > 0)
                 {
+                    empresa.DataAlteracao = DateTime.Now;
+                    empresa.UsuarioAlteracao = _service.ObterUsuarioPorToken(token);
                     empresa = _empresaRepository.Atualizar(empresa);
                     return empresa;
                 }
@@ -49,17 +64,26 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpPost]
-        public ActionResult<dynamic> Post([FromBody] Empresa empresa)
+        public ActionResult<dynamic> Post([FromHeader] string token, [FromBody] Empresa empresa)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (empresa != null)
                 {
+                    empresa.DataAlteracao = DateTime.Now;
+                    empresa.UsuarioAlteracao = _service.ObterUsuarioPorToken(token);
+                    empresa.DataCriacao = DateTime.Now;
+                    empresa.UsuarioCriacao = empresa.UsuarioAlteracao;
                     empresa = _empresaRepository.Adicionar(empresa);
                     if (empresa.Id > 0)
                     {
@@ -71,13 +95,18 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpGet("{Id}")]
-        public ActionResult<dynamic> Get(int Id)
+        public ActionResult<dynamic> Get([FromHeader] string token, int Id)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 if (Id > 0)
@@ -93,13 +122,18 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
 
         [HttpGet]
-        public object Get()
+        public object Get([FromHeader] string token)
         {
+            if (!_service.Autorizado(token))
+            {
+                return Unauthorized();
+            }
+
             try
             {
                 var empresa = _empresaRepository.ObterTodos();
@@ -112,7 +146,7 @@ namespace Controllers.HowVI
             }
             catch (Exception e)
             {
-                return BadRequest(string.Format("Erro na chamada{i}", e.Message));
+                return BadRequest(string.Format("Erro na chamada{0}", e.Message));
             }
         }
     }

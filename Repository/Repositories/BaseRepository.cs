@@ -1,5 +1,6 @@
 ﻿using Entities.Contracts;
 using Entities.Entities;
+using Microsoft.EntityFrameworkCore;
 using Repository;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +20,7 @@ namespace Embarque.Repositorio.Repositories
         {
             _context.Set<TEntity>().Add(entity);
             _context.SaveChanges();
+            _context.Entry(entity).State = EntityState.Detached;
             return entity;
         }
 
@@ -26,6 +28,7 @@ namespace Embarque.Repositorio.Repositories
         {
             _context.Set<TEntity>().Update(entity);
             _context.SaveChanges();
+            _context.Entry(entity).State = EntityState.Detached;
             return entity;
         }
 
@@ -51,8 +54,13 @@ namespace Embarque.Repositorio.Repositories
 
         public void Remover(TEntity entity)
         {
-            _context.Remove(entity);
-            _context.SaveChanges();
+            var remove = _context.Set<TEntity>().Find(entity.Id);
+            if (remove!= null)
+            {
+                _context.Remove(entity);
+                _context.SaveChanges();
+                _context.Entry(entity).State = EntityState.Detached;
+            }
         }
     }
 }

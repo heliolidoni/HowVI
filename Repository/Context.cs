@@ -17,7 +17,8 @@ namespace Repository
 
         public static string Conector()
         {
-            return "Num sê, ainda";
+            return "HowIV";
+            //return "Server=localhost;Database=SistemaGerenciamentoCliente;User Id=sa;Password=.Lidoni1991;";
         }
 
         public Context(DbContextOptions options) : base(options)

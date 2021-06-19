@@ -113,10 +113,10 @@ CREATE TABLE Empresa (
     RazaoSocial varchar(255) not null,
     Nome varchar(255) not null,
     IdEndereco int not null, 
-    CNPJ varchar(14) not null, 
+    CNPJ varchar(25) not null, 
     Telefone varchar(25) null,
     WebSite varchar(50) null, 
-    Email varchar(50),
+    Email varchar(250),
     IsAtivo bit not null default 1,
 	DataCriacao datetime not null,
 	DataAlteracao datetime not null,
@@ -139,7 +139,8 @@ CREATE TABLE Vendedor (
 	DataCriacao datetime not null,
 	DataAlteracao datetime not null,
 	UsuarioCriacao int not null,
-	UsuarioAlteracao int not null
+	UsuarioAlteracao int not null,
+	TokenAccess varchar(200) null
 )
 
 ALTER TABLE Cliente 
